@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.generation.farmacia.model.Produto;
+import com.generation.farmacia.repository.CategoriaRepository;
 import com.generation.farmacia.repository.ProdutoRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,9 @@ public class ProdutoController {
 
 	@Autowired
 	private ProdutoRepository repository;
+	
+	@Autowired
+	private CategoriaRepository categoriaRepository;
 
 	@GetMapping
 	public ResponseEntity<List<Produto>> getAllProdutos() {
@@ -51,10 +55,23 @@ public class ProdutoController {
 	}
 	@PostMapping
     public ResponseEntity<Produto> post(@Valid @RequestBody Produto produto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(produto));
+		if (categoriaRepository.existsById(produto.getCategoria().getId()))
+			return ResponseEntity.status(HttpStatus.CREATED)
+					.body(repository.save(produto));
+		
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Produto não existe!", null);
 	}
 	@PutMapping 
     public ResponseEntity<Produto> put(@Valid @RequestBody Produto produto) {
+		if (categoriaRepository.existsById(produto.getId())) {
+			
+			if(categoriaRepository.existsById(produto.getCategoria().getId()))
+				return ResponseEntity.status(HttpStatus.OK)
+						.body(repository.save(produto));
+			
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nome de Categoria não existe!", null);
+			
+		}
         return repository.findById(produto.getId())
         		.map(resposta -> ResponseEntity.status(HttpStatus.OK)
         		.body(repository.save(produto)))
